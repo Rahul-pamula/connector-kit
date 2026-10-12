@@ -1,4 +1,9 @@
-# connector-kit
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
+    <img src="docs/assets/banner-light.svg" alt="connector-kit: define a SaaS integration once, call it from your app or hand it to an agent as tools" width="100%">
+  </picture>
+</p>
 
 [![CI](https://github.com/itzzzzzzak/connector-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/itzzzzzzak/connector-kit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
