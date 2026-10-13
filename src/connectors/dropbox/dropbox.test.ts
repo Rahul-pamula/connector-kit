@@ -208,3 +208,30 @@ test("sharing.createSharedLink sends settings and returns shared link details", 
   })
   assert.deepEqual(result, sampleSharedLink)
 })
+
+test("files.listFolder parses deleted entries without an id", async () => {
+  const deletedEntry = { ".tag": "deleted", name: "old.txt", path_lower: "/old.txt" }
+  const listWithDeleted = {
+    entries: [deletedEntry],
+    cursor: "cur_del",
+    has_more: false,
+  }
+  const { conn } = h(() => json(listWithDeleted))
+  const result = (await conn.execute("files.listFolder", { path: "/documents", include_deleted: true })) as typeof listWithDeleted
+  assert.deepEqual(result.entries[0], deletedEntry)
+})
+
+test("files.delete on a missing path (409 path_lookup/not_found) is mapped to not_found", async () => {
+  const notFoundBody = {
+    error_summary: "path_lookup/not_found/..",
+    error: {
+      ".tag": "path_lookup",
+      path_lookup: { ".tag": "not_found" },
+    },
+  }
+  const { conn } = h(() => json(notFoundBody, 409))
+  await assert.rejects(
+    () => conn.execute("files.delete", { path: "/does-not-exist.txt" }),
+    (e: unknown) => e instanceof ConnectorKitError && e.code === "not_found",
+  )
+})

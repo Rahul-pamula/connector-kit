@@ -17,7 +17,7 @@ const entry = z.looseObject({
   name: z.string(),
   path_lower: z.string().optional(),
   path_display: z.string().optional(),
-  id: z.string(),
+  id: z.string().optional(),
   client_modified: z.string().optional(),
   server_modified: z.string().optional(),
   rev: z.string().optional(),
@@ -53,8 +53,15 @@ export const dropbox = defineConnector({
     pkce: true,
   },
   detectHttpError: ({ status, body }) => {
-    const err = body as { error_summary?: string; error?: { ".tag"?: string; path?: { ".tag"?: string } } } | undefined
-    if (status === 409 && (err?.error_summary?.startsWith("path/not_found") || err?.error?.path?.[".tag"] === "not_found")) {
+    const err = body as { error_summary?: string; error?: { ".tag"?: string; path?: { ".tag"?: string }; path_lookup?: { ".tag"?: string } } } | undefined
+    const summary = err?.error_summary ?? ""
+    if (
+      status === 409 &&
+      (summary.startsWith("path/not_found") ||
+        summary.startsWith("path_lookup/not_found") ||
+        err?.error?.path?.[".tag"] === "not_found" ||
+        err?.error?.path_lookup?.[".tag"] === "not_found")
+    ) {
       return new ConnectorKitError("not_found", "The specified Dropbox path or file was not found.", { retryable: false, status })
     }
     return undefined
