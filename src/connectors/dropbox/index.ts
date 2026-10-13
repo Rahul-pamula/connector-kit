@@ -107,7 +107,7 @@ export const dropbox = defineConnector({
       effect: "read",
     },
     "files.getMetadata": {
-      description: "Get metadata for a file or folder in Dropbox such as name, size, path, and last modified date. Does not download file content.",
+      description: "Get metadata for a file or folder in Dropbox such as name, size, path, and last modified date. Use when you need details about a specific file or folder without downloading its content.",
       method: "POST",
       path: "/files/get_metadata",
       input: z.object({
@@ -120,7 +120,7 @@ export const dropbox = defineConnector({
       effect: "read",
     },
     "files.search": {
-      description: "Search for files and folders in Dropbox by keyword, filename, or extension. Returns matching results with metadata and an optional cursor for pagination.",
+      description: "Search for files and folders in Dropbox by keyword, filename, or extension. Use when finding files or folders matching a query across Dropbox. Pass cursor to files.searchContinue for subsequent pages.",
       method: "POST",
       path: "/files/search_v2",
       input: z.object({
@@ -136,13 +136,27 @@ export const dropbox = defineConnector({
       }),
       output: z.looseObject({
         matches: z.array(searchMatch),
-        cursor: z.string().optional().describe("Pass to search continue if more results are available"),
+        cursor: z.string().optional().describe("Pass to files.searchContinue if more results are available"),
+        has_more: z.boolean().optional(),
+      }),
+      effect: "read",
+    },
+    "files.searchContinue": {
+      description: "Continue searching files and folders in Dropbox from a previous search cursor. Use when the previous files.search or files.searchContinue returned has_more as true.",
+      method: "POST",
+      path: "/files/search/continue_v2",
+      input: z.object({
+        cursor: z.string().min(1).describe("The cursor returned by files.search or files.searchContinue"),
+      }),
+      output: z.looseObject({
+        matches: z.array(searchMatch),
+        cursor: z.string().optional().describe("Pass to files.searchContinue if more results are available"),
         has_more: z.boolean().optional(),
       }),
       effect: "read",
     },
     "files.delete": {
-      description: "Permanently delete a file or folder at the specified path in Dropbox. Destructive action that removes the item and cannot be undone.",
+      description: "Permanently delete a file or folder at the specified path in Dropbox. Use when removing an item that is no longer needed. Destructive action that removes the item and cannot be undone.",
       method: "POST",
       path: "/files/delete_v2",
       input: z.object({
@@ -154,7 +168,7 @@ export const dropbox = defineConnector({
       effect: "destructive",
     },
     "sharing.createSharedLink": {
-      description: "Create a shared link with optional settings for a file or folder in Dropbox. Allows others to view or edit the file depending on settings.",
+      description: "Create a shared link with optional settings for a file or folder in Dropbox. Use when generating a link to share a file or folder with external users or team members.",
       method: "POST",
       path: "/sharing/create_shared_link_with_settings",
       input: z.object({
@@ -171,7 +185,7 @@ export const dropbox = defineConnector({
       effect: "write",
     },
     "sharing.listSharedLinks": {
-      description: "List existing shared links for a specific path, or all shared links for the user if path is omitted. Returns links and an optional continuation cursor.",
+      description: "List existing shared links for a specific path, or all shared links for the user if path is omitted. Use when checking which links have already been created for a file or folder.",
       method: "POST",
       path: "/sharing/list_shared_links",
       input: z.object({

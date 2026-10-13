@@ -96,6 +96,12 @@ const cases: Array<{ action: string; input: Record<string, unknown>; ok: unknown
     badInput: { query: "" },
   },
   {
+    action: "files.searchContinue",
+    input: { cursor: "search_cur_1" },
+    ok: sampleSearch,
+    badInput: { cursor: "" },
+  },
+  {
     action: "files.delete",
     input: { path: "/documents/report.pdf" },
     ok: sampleDelete,
@@ -234,4 +240,21 @@ test("files.delete on a missing path (409 path_lookup/not_found) is mapped to no
     () => conn.execute("files.delete", { path: "/does-not-exist.txt" }),
     (e: unknown) => e instanceof ConnectorKitError && e.code === "not_found",
   )
+})
+
+test("search and continue workflow uses search_v2 and continue_v2", async () => {
+  const { conn, calls } = h((call) => {
+    if (call.url.pathname === "/2/files/search_v2") return json({ ...sampleSearch, has_more: true, cursor: "s_cur_1" })
+    if (call.url.pathname === "/2/files/search/continue_v2") return json(sampleSearch)
+    return json({}, 404)
+  })
+
+  const page1 = (await conn.execute("files.search", { query: "invoice" })) as typeof sampleSearch
+  assert.equal(calls[0]!.url.pathname, "/2/files/search_v2")
+  assert.equal(page1.cursor, "s_cur_1")
+
+  const page2 = (await conn.execute("files.searchContinue", { cursor: page1.cursor! })) as typeof sampleSearch
+  assert.equal(calls[1]!.url.pathname, "/2/files/search/continue_v2")
+  assert.deepEqual(calls[1]!.body, { cursor: "s_cur_1" })
+  assert.equal(page2.has_more, false)
 })
